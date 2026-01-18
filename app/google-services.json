@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "862221728098",
+    "project_id": "coupleexpensetracker-d226d",
+    "storage_bucket": "coupleexpensetracker-d226d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:862221728098:android:2d66caf63f28012a60143b",
+        "android_client_info": {
+          "package_name": "com.example.coupleexpensetracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "862221728098-getvfte7emndhse8ed9phs8gn5u21c04.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAT8OjJX95WDgu0eLCYCfrnujnNfs4xJ88"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "862221728098-getvfte7emndhse8ed9phs8gn5u21c04.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
