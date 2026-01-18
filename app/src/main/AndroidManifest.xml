@@ -11,38 +11,44 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CoupleExpenseTracker">
+
+        <!-- SPLASH (LAUNCHER) -->
         <activity
-            android:name=".activities.SavingsActivity"
+            android:name=".activities.SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- MAIN (optional redirect, no launcher) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <!-- AUTH -->
+        <activity
+            android:name=".activities.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".activities.ExpenseActivity"
+            android:name=".activities.SignupActivity"
+            android:exported="false" />
+
+        <!-- APP SCREENS -->
+        <activity
+            android:name=".activities.DashboardActivity"
             android:exported="false" />
         <activity
             android:name=".activities.IncomeActivity"
             android:exported="false" />
         <activity
-            android:name=".activities.DashboardActivity"
+            android:name=".activities.ExpenseActivity"
             android:exported="false" />
         <activity
-            android:name=".activities.SignupActivity"
+            android:name=".activities.SavingsActivity"
             android:exported="false" />
-        <activity
-            android:name=".activities.LoginActivity"
-            android:exported="false" />
-        <activity
-            android:name=".activities.SplashActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.CoupleExpenseTracker">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>

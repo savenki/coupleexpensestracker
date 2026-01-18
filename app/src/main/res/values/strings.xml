@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">CoupleExpenseTracker</string>
+    <string name="default_web_client_id">
+    862221728098-getvfte7emndhse8ed9phs8gn5u21c04.apps.googleusercontent.com
+</string>
+    <string-array name="income_categories">
+        <item>Salary</item>
+        <item>Tax Returns</item>
+        <item>Gift</item>
+    </string-array>
+
+
 </resources>
