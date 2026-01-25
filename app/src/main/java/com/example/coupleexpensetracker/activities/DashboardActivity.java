@@ -6,10 +6,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.*;
 
+import androidx.core.widget.NestedScrollView;
+
 import com.example.coupleexpensetracker.R;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.*;
 import com.github.mikephil.charting.utils.ColorTemplate;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.*;
 
 import java.text.DecimalFormat;
@@ -18,54 +21,63 @@ import java.util.*;
 
 public class DashboardActivity extends BaseActivity {
 
-    Spinner spMonth, spYear, spUser;
+    Spinner spMonth, spYear;
     TextView tvBalance, tvWarning, tvToggle;
     LinearLayout layoutBreakdown;
+    NestedScrollView nestedScroll;
     PieChart pieChart;
 
     FirebaseFirestore db;
-
-    List<String> userIds = new ArrayList<>();
-    List<String> userNames = new ArrayList<>();
+    String currentUserId;
 
     boolean isReady = false;
 
-    // Your existing date format: "1/1/2026"
     SimpleDateFormat sdf = new SimpleDateFormat("d/M/yyyy", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ✅ VERY IMPORTANT (keeps drawer + bottom nav)
         setupNavigation(R.layout.activity_dashboard, R.id.nav_dashboard);
 
         db = FirebaseFirestore.getInstance();
+        currentUserId = FirebaseAuth.getInstance().getUid();
 
         bindViews();
         setupMonthYear();
-        loadUsers();
+
+        isReady = true;
+        loadDashboard();
     }
 
-    // ---------------- VIEW BINDING ----------------
     private void bindViews() {
         spMonth = findViewById(R.id.spMonth);
         spYear = findViewById(R.id.spYear);
-        spUser = findViewById(R.id.spUser);
         tvBalance = findViewById(R.id.tvBalance);
         tvWarning = findViewById(R.id.tvWarning);
         tvToggle = findViewById(R.id.tvToggle);
         layoutBreakdown = findViewById(R.id.layoutBreakdown);
+        nestedScroll = findViewById(R.id.nestedScroll);
         pieChart = findViewById(R.id.pieChart);
 
         tvToggle.setOnClickListener(v -> {
-            boolean open = layoutBreakdown.getVisibility() == View.VISIBLE;
-            layoutBreakdown.setVisibility(open ? View.GONE : View.VISIBLE);
+            boolean open = nestedScroll.getVisibility() == View.VISIBLE;
+            nestedScroll.setVisibility(open ? View.GONE : View.VISIBLE);
             tvToggle.setText(open ? "Expense Breakdown ▼" : "Expense Breakdown ▲");
         });
+
+        AdapterView.OnItemSelectedListener reload =
+                new AdapterView.OnItemSelectedListener() {
+                    @Override public void onItemSelected(AdapterView<?> p, View v, int pos, long id) {
+                        if (isReady) loadDashboard();
+                    }
+                    @Override public void onNothingSelected(AdapterView<?> p) {}
+                };
+
+        spMonth.setOnItemSelectedListener(reload);
+        spYear.setOnItemSelectedListener(reload);
     }
 
-    // ---------------- MONTH / YEAR ----------------
     private void setupMonthYear() {
 
         String[] months = {
@@ -74,10 +86,8 @@ public class DashboardActivity extends BaseActivity {
         };
 
         List<Integer> years = new ArrayList<>();
-        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        for (int i = currentYear - 2; i <= currentYear + 2; i++) {
-            years.add(i);
-        }
+        int y = Calendar.getInstance().get(Calendar.YEAR);
+        for (int i = y - 2; i <= y + 2; i++) years.add(i);
 
         spMonth.setAdapter(new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, months));
@@ -86,63 +96,24 @@ public class DashboardActivity extends BaseActivity {
                 android.R.layout.simple_spinner_item, years));
     }
 
-    // ---------------- USERS ----------------
-    private void loadUsers() {
-
-        db.collection("users").get().addOnSuccessListener(snapshot -> {
-
-            userIds.clear();
-            userNames.clear();
-
-            for (DocumentSnapshot d : snapshot) {
-                userIds.add(d.getId());
-                userNames.add(d.getString("name"));
-            }
-
-            spUser.setAdapter(new ArrayAdapter<>(this,
-                    android.R.layout.simple_spinner_item, userNames));
-
-            AdapterView.OnItemSelectedListener listener =
-                    new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                            if (isReady && !userIds.isEmpty()) {
-                                loadDashboard(userIds.get(spUser.getSelectedItemPosition()));
-                            }
-                        }
-                        @Override public void onNothingSelected(AdapterView<?> parent) {}
-                    };
-
-            spMonth.setOnItemSelectedListener(listener);
-            spYear.setOnItemSelectedListener(listener);
-            spUser.setOnItemSelectedListener(listener);
-
-            isReady = true;
-
-            if (!userIds.isEmpty()) {
-                loadDashboard(userIds.get(0));
-            }
-        });
-    }
-
     // ---------------- DASHBOARD ----------------
-    private void loadDashboard(String userId) {
+    private void loadDashboard() {
 
         layoutBreakdown.removeAllViews();
         pieChart.clear();
 
-        int selMonth = spMonth.getSelectedItemPosition(); // 0-based
+        int selMonth = spMonth.getSelectedItemPosition();
         int selYear = Integer.parseInt(spYear.getSelectedItem().toString());
 
         double[] income = {0};
         double[] savings = {0};
         double[] expense = {0};
 
-        Map<String, Double> categoryMap = new HashMap<>();
+        Map<String, Double> catMap = new HashMap<>();
 
-        // -------- INCOME --------
+        // INCOME
         db.collection("income")
-                .whereEqualTo("userId", userId)
+                .whereEqualTo("userId", currentUserId)
                 .get()
                 .addOnSuccessListener(incomeSnap -> {
 
@@ -155,19 +126,18 @@ public class DashboardActivity extends BaseActivity {
                             if (cal.get(Calendar.MONTH) == selMonth &&
                                     cal.get(Calendar.YEAR) == selYear) {
 
-                                Double amt = d.getDouble("amount");
-                                if (amt != null) income[0] += amt;
+                                income[0] += d.getDouble("amount");
                             }
                         } catch (Exception ignored) {}
                     }
 
-                    // -------- SAVINGS (Timestamp) --------
+                    // SAVINGS
                     db.collection("savings")
-                            .whereEqualTo("userId", userId)
+                            .whereEqualTo("userId", currentUserId)
                             .get()
-                            .addOnSuccessListener(snap -> {
+                            .addOnSuccessListener(saveSnap -> {
 
-                                for (DocumentSnapshot d : snap) {
+                                for (DocumentSnapshot d : saveSnap) {
                                     if (d.getTimestamp("createdAt") == null) continue;
 
                                     Calendar cal = Calendar.getInstance();
@@ -176,14 +146,13 @@ public class DashboardActivity extends BaseActivity {
                                     if (cal.get(Calendar.MONTH) == selMonth &&
                                             cal.get(Calendar.YEAR) == selYear) {
 
-                                        Double amt = d.getDouble("amount");
-                                        if (amt != null) savings[0] += amt;
+                                        savings[0] += d.getDouble("amount");
                                     }
                                 }
 
-                                // -------- EXPENSE --------
+                                // EXPENSE
                                 db.collection("expenses")
-                                        .whereEqualTo("userId", userId)
+                                        .whereEqualTo("userId", currentUserId)
                                         .get()
                                         .addOnSuccessListener(expSnap -> {
 
@@ -196,26 +165,24 @@ public class DashboardActivity extends BaseActivity {
                                                     if (cal.get(Calendar.MONTH) == selMonth &&
                                                             cal.get(Calendar.YEAR) == selYear) {
 
-                                                        Double amt = d.getDouble("amount");
+                                                        double amt = d.getDouble("amount");
                                                         String cat = d.getString("category");
-                                                        if (amt == null || cat == null) continue;
 
                                                         expense[0] += amt;
                                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                                                            categoryMap.put(cat,
-                                                                    categoryMap.getOrDefault(cat, 0.0) + amt);
+                                                            catMap.put(cat,
+                                                                    catMap.getOrDefault(cat, 0.0) + amt);
                                                         }
                                                     }
                                                 } catch (Exception ignored) {}
                                             }
 
-                                            updateUI(income[0], savings[0], expense[0], categoryMap);
+                                            updateUI(income[0], savings[0], expense[0], catMap);
                                         });
                             });
                 });
     }
 
-    // ---------------- UI UPDATE ----------------
     private void updateUI(double income, double savings,
                           double expense, Map<String, Double> catMap) {
 
@@ -239,17 +206,14 @@ public class DashboardActivity extends BaseActivity {
         buildBreakdown(catMap, income);
     }
 
-    // ---------------- PIE CHART ----------------
-    private void drawPieChart(double income, double savings,
-                              Map<String, Double> catMap) {
+    private void drawPieChart(double income, double savings, Map<String, Double> catMap) {
 
         List<PieEntry> entries = new ArrayList<>();
-
         if (income > 0) entries.add(new PieEntry((float) income, "Income"));
         if (savings > 0) entries.add(new PieEntry((float) savings, "Savings"));
 
-        for (String cat : catMap.keySet()) {
-            entries.add(new PieEntry(catMap.get(cat).floatValue(), cat));
+        for (String c : catMap.keySet()) {
+            entries.add(new PieEntry(catMap.get(c).floatValue(), c));
         }
 
         PieDataSet ds = new PieDataSet(entries, "Overview");
@@ -260,7 +224,6 @@ public class DashboardActivity extends BaseActivity {
         pieChart.invalidate();
     }
 
-    // ---------------- CATEGORY BREAKDOWN ----------------
     private void buildBreakdown(Map<String, Double> catMap, double income) {
 
         for (String cat : catMap.keySet()) {
@@ -268,17 +231,13 @@ public class DashboardActivity extends BaseActivity {
             View v = LayoutInflater.from(this)
                     .inflate(R.layout.item_category_progress, layoutBreakdown, false);
 
-            TextView tvCat = v.findViewById(R.id.tvCategory);
-            TextView tvAmt = v.findViewById(R.id.tvAmount);
+            ((TextView) v.findViewById(R.id.tvCategory)).setText(cat);
+            ((TextView) v.findViewById(R.id.tvAmount))
+                    .setText("₹ " + new DecimalFormat("#.00").format(catMap.get(cat)));
+
             ProgressBar pb = v.findViewById(R.id.progressBar);
-
-            double amt = catMap.get(cat);
-
-            tvCat.setText(cat);
-            tvAmt.setText("₹ " + new DecimalFormat("#.00").format(amt));
-
             pb.setMax((int) income);
-            pb.setProgress((int) amt);
+            pb.setProgress(catMap.get(cat).intValue());
 
             layoutBreakdown.addView(v);
         }

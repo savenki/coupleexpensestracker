@@ -30,13 +30,6 @@
                 android:layout_height="wrap_content"/>
         </LinearLayout>
 
-        <!-- USER -->
-        <Spinner
-            android:id="@+id/spUser"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"/>
-
         <!-- BALANCE -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -44,8 +37,8 @@
             android:layout_marginTop="16dp">
 
             <LinearLayout
-                android:orientation="vertical"
                 android:padding="16dp"
+                android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -71,7 +64,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- PIE CHART -->
+        <!-- PIE -->
         <com.github.mikephil.charting.charts.PieChart
             android:id="@+id/pieChart"
             android:layout_width="match_parent"
@@ -98,12 +91,19 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
 
-                <LinearLayout
-                    android:id="@+id/layoutBreakdown"
-                    android:orientation="vertical"
-                    android:visibility="gone"
+                <androidx.core.widget.NestedScrollView
+                    android:id="@+id/nestedScroll"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="200dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/layoutBreakdown"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+                </androidx.core.widget.NestedScrollView>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
